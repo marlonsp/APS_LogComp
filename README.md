@@ -4,44 +4,101 @@ CalvinLang é uma linguagem de programação projetada para simular o ciclo de C
 
 ![Diagrama do ciclo de Calvin - khanacademy](https://cdn.kastatic.org/ka-perseus-images/4c9fbc7e4f158fd4bf3e1114e9a7ebe47d08f020.png)
 
-3 CO2 + 3 RuBP -> 6 3-PGA <br>
-6 3-PGA + 6 NADPH + 9 ATP -> 6 G3P + 6 NADP+ + 9 ADP + 9 Pi <br>
-5 G3P -> 3 RuBP + 3 ATP <br>
+CO2 + RuBP -> 2 3-PGA <br>
+3-PGA + NADPH + ATP -> G3P + NADP+ + ADP + Pi <br>
+5 G3P + 3 ATP -> 3 RuBP + 3 ADP <br>
 1 G3P -> 1/2 Glicose <br>
 
 ```
-// Declaração de variáveis
-CO2_disponivel = obterCO2DoAmbiente()
-RuBP_disponivel = obterRuBPDaCélula()
-glicose_disponivel = obterGlicoseDisponivel()
-threshold_glicose = 100 // Exemplo de threshold para glicose disponível
-threshold_RuBP = 50 // Exemplo de threshold para RuBP disponível
-energia_luminosa = capturarEnergiaLuminosa()
+programa            ::= instrução*
 
-// Fixação do CO2
-PGA = fixarCO2(CO2_disponivel, RuBP_disponivel)
+instrução           ::= declaração | atribuição | estrutura_condicional | loop
 
-// Redução do PGA
-se energia_luminosa > 0 então:
-    NADPH = obterNADPH()
-    ATP = obterATP()
-    G3P = reduzirPGA(PGA, NADPH, ATP)
-senão:
-    abortar("Não há energia suficiente para redução do PGA")
+declaração          ::= "variáveis" identificador ("," identificador)* "=" expressão
 
-// Regeneração do RuBP
-enquanto célulaNecessitaRegenerarRuBP():
-    ATP = obterATP()
-    RuBP = regenerarRuBP(G3P, ATP)
+atribuição          ::= identificador "=" expressão
 
-// Conversão de G3P baseada na disponibilidade de glicose e RuBP
-para cada molécula de G3P:
-    se glicose_disponivel > threshold_glicose ou RuBP_disponivel < threshold_RuBP então:
-        RuBP = RuBP + 3/5
-    senão:
-        glicose = glicose + 1/2
-        
-// Fim do ciclo de Calvin
+estrutura_condicional ::= "se" expressão "então" bloco ("senão" bloco)?
+
+loop                ::= "enquanto" expressão "faça" bloco
+
+bloco               ::= "{" instrução* "}"
+
+expressão          ::= termo (operador termo)*
+
+termo               ::= número | identificador | chamada_função | "(" expressão ")"
+
+chamada_função      ::= função "(" (expressão ("," expressão)*)? ")"
+
+função              ::= "fixação_CO2" | "redução_3_PGA" | "regeneração_RuBP" | "síntese_glicose"
+
+operador            ::= "+" | "-" | "*" | "/" | ">=" | ">" | "<=" | "<" | "==" | "!="
+
+identificador       ::= "RuBP" | "G3P" | "ATP" | "Glicose" | "NADPH" | "CO2" | "3_PGA" | "variáveis" | "se" | "então" | "senão" | "enquanto" | "faça" | "fixação_CO2" | "redução_3_PGA" | "regeneração_RuBP" | "síntese_glicose"
+
+número              ::= dígito+
+
+letra               ::= "a" | "b" | ... | "z" | "A" | "B" | ... | "Z"
+
+dígito              ::= "0" | "1" | ... | "9"
+```
+
+Exemplo de código para a linguagem:
+
+```
+# Definição das variáveis iniciais
+variáveis CO2 = 10, RuBP = 10, NADPH = 10, ATP = 10, Glicose = 0
+
+# Função para a etapa de Fixação do CO2
+função fixação_CO2():
+    CO2 -= 1
+    RuBP -= 1
+    3_PGA_produzido = 2
+    retorne 3_PGA_produzido
+
+# Função para a etapa de Redução de 3-PGA para G3P
+função redução_3_PGA():
+    NADPH -= 1
+    ATP -= 1
+    G3P_produzido = 1
+    retorne G3P_produzido
+
+# Função para a etapa de Regeneração de RuBP
+função regeneração_RuBP():
+    ATP -= 3
+    RuBP_produzido = 3
+    retorne RuBP_produzido
+
+# Função para a síntese de glicose
+função síntese_glicose():
+    Glucose_produzida = 0.5
+    Glicose += Glucose_produzida
+
+# Loop principal para simular o ciclo de Calvin
+enquanto CO2 > 0 e RuBP > 0:
+    # Etapa 1: Fixação do CO2
+    3_PGA_produzido = fixação_CO2()
+    
+    # Etapa 2: Redução de 3-PGA para G3P
+    G3P_produzido = redução_3_PGA()
+    
+    # Verificar se há ATP suficiente para a regeneração de RuBP
+    se G3P_produzido >= 5 e ATP >= 3:
+        # Etapa 3: Regeneração de RuBP
+        RuBP_produzido = regeneração_RuBP()
+    
+    # Verificar se há G3P suficiente para a síntese de glicose
+    se G3P_produzido >= 1:
+        # Etapa 4: Síntese de glicose
+        síntese_glicose()
+
+# Exibição dos resultados finais
+exibir("Resultados finais:")
+exibir("CO2:", CO2)
+exibir("RuBP:", RuBP)
+exibir("NADPH:", NADPH)
+exibir("ATP:", ATP)
+exibir("Glicose:", Glicose)
 ```
 
 Referencias:
