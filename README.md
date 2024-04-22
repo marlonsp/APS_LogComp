@@ -10,95 +10,126 @@ CO2 + RuBP -> 2 3-PGA <br>
 1 G3P -> 1/2 Glicose <br>
 
 ```
-programa            ::= instrução*
+program = { statement };
 
-instrução           ::= declaração | atribuição | estrutura_condicional | loop
+statement = variable_declaration
+          | custom_variable_declaration
+          | assignment_statement
+          | operation_statement
+          | cycle_of_calvin
+          | print_statement
+          | comment;
 
-declaração          ::= "variáveis" identificador ("," identificador)* "=" expressão
+variable_declaration = "variable", (RuBP | glicose | RuBP_min | glicose_min), "=", expression, ";";  // Declaração de variáveis padrão
 
-atribuição          ::= identificador "=" expressão
+custom_variable_declaration = "custom_variable", identifier, ";";  // Declaração de variáveis personalizadas
 
-estrutura_condicional ::= "se" expressão "então" bloco ("senão" bloco)?
+assignment_statement = (identifier | custom_variable), assignment_operator, expression, ";";  // Declaração de atribuição
 
-loop                ::= "enquanto" expressão "faça" bloco
+operation_statement = (identifier | custom_variable), assignment_operator, (identifier | custom_variable | number), arithmetic_operator, (identifier | custom_variable | number), ";";  // Declaração de operação
 
-bloco               ::= "{" instrução* "}"
+cycle_of_calvin = "calvin_cycle", "{", before_statements, function, function, function, function, conditionals, after_statements, "}";  // Ciclo de Calvin com condições
 
-expressão          ::= termo (operador termo)*
+before_statements = { assignment_statement | operation_statement };
 
-termo               ::= número | identificador | chamada_função | "(" expressão ")"
+after_statements = { assignment_statement | operation_statement };
 
-chamada_função      ::= função "(" (expressão ("," expressão)*)? ")"
+conditionals = if_statement, else_statement;
 
-função              ::= "fixação_CO2" | "redução_3_PGA" | "regeneração_RuBP" | "síntese_glicose"
+if_statement = "if", "(", condition, ")", "{", function, "}";
 
-operador            ::= "+" | "-" | "*" | "/" | ">=" | ">" | "<=" | "<" | "==" | "!="
+else_statement = "else", "{", function, "}";
 
-identificador       ::= "RuBP" | "G3P" | "ATP" | "Glicose" | "NADPH" | "CO2" | "3_PGA" | "variáveis" | "se" | "então" | "senão" | "enquanto" | "faça" | "fixação_CO2" | "redução_3_PGA" | "regeneração_RuBP" | "síntese_glicose"
+function = "fixação_CO2", "redução_3_PGA", "regeneração_RuBP", "síntese_glicose";
 
-número              ::= dígito+
+condition = identifier, comparison_operator, expression
+          | identifier, logical_operator, identifier
+          | "(", condition, ")", logical_operator, "(", condition, ")";
 
-letra               ::= "a" | "b" | ... | "z" | "A" | "B" | ... | "Z"
+expression = term, { ( "+" | "-" ), term };  // Expressão aritmética
 
-dígito              ::= "0" | "1" | ... | "9"
+term = factor, { ( "*" | "/" ), factor };
+
+factor = identifier
+       | number
+       | "(", expression, ")";
+
+assignment_operator = "=" | "+=" | "-=" | "*=" | "/=";  // Operadores de atribuição
+
+arithmetic_operator = "+" | "-" | "*" | "/";  // Operadores aritméticos
+
+comparison_operator = "==" | "!=" | "<" | ">" | "<=" | ">=";
+
+logical_operator = "and" | "or";
+
+print_statement = "print", "(", print_expression, ")", ";";  // Comando de impressão
+
+print_expression = expression
+                  | string_literal
+                  | identifier;
+
+comment = "//", { all_characters_except_newline };
+
+identifier = RuBP | glicose | RuBP_min | glicose_min;
+
+RuBP = "RuBP";
+
+glicose = "glicose";
+
+RuBP_min = "RuBP_min";
+
+glicose_min = "glicose_min";
+
+number = digit, { digit };
+
+string_literal = '"', { all_characters_except_quotes }, '"';
+
+letter = "a" | "b" | ... | "z" | "A" | "B" | ... | "Z";
+
+digit = "0" | "1" | ... | "9";
+
+all_characters_except_newline = any_visible_character | space;
+
+all_characters_except_quotes = all_characters_except_newline | '"';
+
+space = " ";
 ```
 
 Exemplo de código para a linguagem:
 
 ```
-# Definição das variáveis iniciais
-variáveis CO2 = 10, RuBP = 10, NADPH = 10, ATP = 10, Glicose = 0
+// Declaração de variáveis padrão
+variable RuBP = 0;
+variable glicose = 0;
+variable RuBP_min = 3;  // Valor mínimo de RuBP
+variable glicose_min = 0.5;  // Valor mínimo de glicose
 
-# Função para a etapa de Fixação do CO2
-função fixação_CO2():
-    CO2 -= 1
-    RuBP -= 1
-    3_PGA_produzido = 2
-    retorne 3_PGA_produzido
+// Declaração de variáveis personalizadas
+custom_variable luminosidade = 50;
+custom_variable pH = 6;
 
-# Função para a etapa de Redução de 3-PGA para G3P
-função redução_3_PGA():
-    NADPH -= 1
-    ATP -= 1
-    G3P_produzido = 1
-    retorne G3P_produzido
+// Execução do ciclo de Calvin
+calvin_cycle {
 
-# Função para a etapa de Regeneração de RuBP
-função regeneração_RuBP():
-    ATP -= 3
-    RuBP_produzido = 3
-    retorne RuBP_produzido
+    // Execução das funções fixação_CO2 e redução_3_PGA em ordem
+    fixação_CO2;
+    redução_3_PGA;
 
-# Função para a síntese de glicose
-função síntese_glicose():
-    Glucose_produzida = 0.5
-    Glicose += Glucose_produzida
+    // Condicional para regeneração_RuBP
+    if (RuBP < RuBP_min and glicose > glicose_min) {
+        regeneração_RuBP;
+    } else {
+        síntese_glicose;
+    }
 
-# Loop principal para simular o ciclo de Calvin
-enquanto CO2 > 0 e RuBP > 0:
-    # Etapa 1: Fixação do CO2
-    3_PGA_produzido = fixação_CO2()
-    
-    # Etapa 2: Redução de 3-PGA para G3P
-    G3P_produzido = redução_3_PGA()
-    
-    # Verificar se há ATP suficiente para a regeneração de RuBP
-    se G3P_produzido >= 5 e ATP >= 3:
-        # Etapa 3: Regeneração de RuBP
-        RuBP_produzido = regeneração_RuBP()
-    
-    # Verificar se há G3P suficiente para a síntese de glicose
-    se G3P_produzido >= 1:
-        # Etapa 4: Síntese de glicose
-        síntese_glicose()
-
-# Exibição dos resultados finais
-exibir("Resultados finais:")
-exibir("CO2:", CO2)
-exibir("RuBP:", RuBP)
-exibir("NADPH:", NADPH)
-exibir("ATP:", ATP)
-exibir("Glicose:", Glicose)
+    // Condicional para execução de novo ciclo
+    if (RuBP > RuBP_min and glicose > glicose_min) {
+        // Alterações de valores de variáveis após as funções
+        luminosidade -= 5;
+        pH += 0.1;
+        calvin_cycle;
+    }
+}
 ```
 
 Referencias:
