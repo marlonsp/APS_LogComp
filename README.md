@@ -1,15 +1,19 @@
-# APS_LogComp
+# Plantarium - APS - Uma Linguagem de Programação 
 
-CalvinLang é uma linguagem de programação projetada para simular o ciclo de Calvin, uma importante etapa da fotossíntese nas células vegetais. Inspirada nas equações bioquímicas desse ciclo, CalvinLang oferece uma sintaxe intuitiva e clara para expressar as diferentes etapas do processo, incluindo a fixação do dióxido de carbono (CO2), a redução do ácido 3-fosfoglicérico (PGA) em gliceraldeído-3-fosfato (G3P) e a regeneração do ribulose-1,5-bisfosfato (RuBP). A linguagem permite a declaração de variáveis para representar os diferentes compostos envolvidos, bem como o uso de estruturas de controle de fluxo, como condicionais e loops, para controlar o fluxo das reações e simular as condições necessárias para o funcionamento do ciclo.
+**Plantarium** é uma linguagem de programação projetada para simular o ciclo de Calvin, uma importante etapa da fotossíntese nas células vegetais. Inspirada nas equações bioquímicas desse ciclo, CalvinLang oferece uma sintaxe intuitiva e clara para expressar as diferentes etapas do processo, incluindo a fixação do dióxido de carbono (CO2), a redução do ácido 3-fosfoglicérico (PGA) em gliceraldeído-3-fosfato (G3P) e a regeneração do ribulose-1,5-bisfosfato (RuBP). A linguagem permite a declaração de variáveis para representar os diferentes compostos envolvidos, bem como o uso de estruturas de controle de fluxo, como condicionais e loops, para controlar o fluxo das reações e simular as condições necessárias para o funcionamento do ciclo.
 
+O seguinte diagrama da KhanAcademy ilustra o ciclo de Calvin:
 ![Diagrama do ciclo de Calvin - khanacademy](https://cdn.kastatic.org/ka-perseus-images/4c9fbc7e4f158fd4bf3e1114e9a7ebe47d08f020.png)
+
+Sendo sua equação química:
 
 CO2 + RuBP -> 2 3-PGA <br>
 3-PGA + NADPH + ATP -> G3P + NADP+ + ADP + Pi <br>
 5 G3P + 3 ATP -> 3 RuBP + 3 ADP <br>
 1 G3P -> 1/2 Glicose <br>
 
-```
+## EBNF
+```EBNF
 program = { statement };
 
 statement = variable_declaration
@@ -95,9 +99,9 @@ all_characters_except_quotes = all_characters_except_newline | '"';
 space = " ";
 ```
 
-Exemplo de código para a linguagem:
+## Exemplo de código para a linguagem:
 
-```
+```Plantarium
 // Declaração de variáveis padrão
 variable RuBP = 0;
 variable glicose = 0;
