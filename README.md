@@ -21,22 +21,19 @@ statement = variable_declaration
           | assignment_statement
           | operation_statement
           | cycle_of_calvin
-          | print_statement
-          | comment;
+          | print_statement;
 
-variable_declaration = "variable", (RuBP | glicose | RuBP_min | glicose_min), "=", expression, ";";  // Declaração de variáveis padrão
+variable_declaration = "variable", (RuBP | glicose | RuBP_min | glicose_min), "=", number, ";";  // Declaração de variáveis padrão
 
 custom_variable_declaration = "custom_variable", identifier, ";";  // Declaração de variáveis personalizadas
 
-assignment_statement = (identifier | custom_variable), assignment_operator, expression, ";";  // Declaração de atribuição
+assignment_statement = (identifier | custom_variable), assignment_operator, (identifier | custom_variable | number), ";";  // Declaração de atribuição
 
-operation_statement = (identifier | custom_variable), assignment_operator, (identifier | custom_variable | number), arithmetic_operator, (identifier | custom_variable | number), ";";  // Declaração de operação
+operation_statement = (identifier | custom_identifier), assignment_operator, (identifier | custom_identifier | number), arithmetic_operator, (identifier | custom_identifier | number), ";";  // Declaração de operação
 
-cycle_of_calvin = "calvin_cycle", "{", before_statements, function, function, function, function, conditionals, after_statements, "}";  // Ciclo de Calvin com condições
+cycle_of_calvin = "calvin_cycle", "{", statements, "fixação_CO2", "redução_3_PGA", conditionals, statements, "}";  // Ciclo de Calvin com condições
 
-before_statements = { assignment_statement | operation_statement };
-
-after_statements = { assignment_statement | operation_statement };
+statements = { assignment_statement | operation_statement };
 
 conditionals = if_statement, else_statement;
 
@@ -44,19 +41,11 @@ if_statement = "if", "(", condition, ")", "{", function, "}";
 
 else_statement = "else", "{", function, "}";
 
-function = "fixação_CO2", "redução_3_PGA", "regeneração_RuBP", "síntese_glicose";
+function = "regeneração_RuBP", "síntese_glicose";
 
-condition = identifier, comparison_operator, expression
+condition = identifier, comparison_operator, number
           | identifier, logical_operator, identifier
           | "(", condition, ")", logical_operator, "(", condition, ")";
-
-expression = term, { ( "+" | "-" ), term };  // Expressão aritmética
-
-term = factor, { ( "*" | "/" ), factor };
-
-factor = identifier
-       | number
-       | "(", expression, ")";
 
 assignment_operator = "=" | "+=" | "-=" | "*=" | "/=";  // Operadores de atribuição
 
@@ -66,15 +55,11 @@ comparison_operator = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 logical_operator = "and" | "or";
 
-print_statement = "print", "(", print_expression, ")", ";";  // Comando de impressão
-
-print_expression = expression
-                  | string_literal
-                  | identifier;
-
-comment = "//", { all_characters_except_newline };
+print_statement = "print", "(", string_literal | identifier, ")", ";";  // Comando de impressão
 
 identifier = RuBP | glicose | RuBP_min | glicose_min;
+
+custom_identifier = letter, { letter | digit | "_" } ;
 
 RuBP = "RuBP";
 
