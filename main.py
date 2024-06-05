@@ -66,11 +66,6 @@ class Tokenizer:
             self.position += 12
             # print(self.next)
             return
-        if self.source[self.position:self.position+8] == 'function':
-            self.next = Token('FUNCTION', 'function')
-            self.position += 8
-            # print(self.next)
-            return
         if self.source[self.position:self.position+6] == 'return':
             self.next = Token('RETURN', 'return')
             self.position += 6
@@ -347,20 +342,7 @@ class Parser:
         elif current_token.type == 'IDEN':
             iden = current_token.value
             Parser.tokenizer.select_next()
-            if Parser.tokenizer.next.type == 'LPAREN':
-                # Chamada de função
-                Parser.tokenizer.select_next()
-                args = []
-                while Parser.tokenizer.next.type != 'RPAREN':
-                    args.append(Parser.parse_boolexp())
-                    if Parser.tokenizer.next.type == 'COMMA':
-                        Parser.tokenizer.select_next()
-                Parser.tokenizer.select_next()
-                if Parser.tokenizer.next.type != 'LB':
-                    raise Exception('Esperado um "\n"')
-                Parser.tokenizer.select_next()
-                return FuncCall(iden, args)
-            elif Parser.tokenizer.next.type == 'ASSIGN':
+            if Parser.tokenizer.next.type == 'ASSIGN':
                 Parser.tokenizer.select_next()
                 result = BinOp('=', [IntVal(iden), Parser.parse_boolexp()])
                 if Parser.tokenizer.next.type != 'SEMICOLON':
@@ -493,40 +475,6 @@ class Parser:
                 raise Exception('Esperado um ";" após bloco do "if" ou "else"')
             Parser.tokenizer.select_next()
             return If('if', if_childs)
-        elif current_token.type == 'FUNCTION':
-            Parser.tokenizer.select_next()
-            current_token = Parser.tokenizer.next
-            if current_token.type != 'IDEN':
-                raise Exception(f'Esperado um identificador para a função. Encontrado: {current_token.type}')
-            function_name = current_token.value
-            Parser.tokenizer.select_next()
-            if Parser.tokenizer.next.type != 'LPAREN':
-                raise Exception('Esperado um "("')
-            Parser.tokenizer.select_next()
-            args = []
-            while Parser.tokenizer.next.type != 'RPAREN':
-                current_token = Parser.tokenizer.next
-                if current_token.type != 'IDEN':
-                    raise Exception('Esperado um identificador para o argumento da função')
-                args.append(current_token.value)
-                Parser.tokenizer.select_next()
-                if Parser.tokenizer.next.type == 'COMMA':
-                    Parser.tokenizer.select_next()
-            Parser.tokenizer.select_next()
-            if Parser.tokenizer.next.type != 'LB':
-                raise Exception('Esperado um "\n"')
-            Parser.tokenizer.select_next()
-            # Parse the function block
-            function_block = Block('block')
-            while Parser.tokenizer.next.type != 'END':
-                function_block.children.append(Parser.parse_statement())
-            if Parser.tokenizer.next.type != 'END':
-                raise Exception('Esperado um "end" após a declaração da função')
-            Parser.tokenizer.select_next()
-            if Parser.tokenizer.next.type != 'LB':
-                raise Exception('Esperado um "\n"')
-            Parser.tokenizer.select_next()
-            return FuncDec(function_name, [function_name] + args + [function_block])
         elif current_token.type == 'RETURN':
             Parser.tokenizer.select_next()
             result = Parser.parse_boolexp()
@@ -598,17 +546,7 @@ class Parser:
             iden = current_token.value
             Parser.tokenizer.select_next()
             # chamada de função
-            if Parser.tokenizer.next.type == 'LPAREN':
-                Parser.tokenizer.select_next()
-                args = []
-                while Parser.tokenizer.next.type != 'RPAREN':
-                    args.append(Parser.parse_boolexp())
-                    if Parser.tokenizer.next.type == 'COMMA':
-                        Parser.tokenizer.select_next()
-                Parser.tokenizer.select_next()
-                return FuncCall(iden, args)
-            else:
-                return IntVal(iden)
+            return IntVal(iden)
         elif current_token.type == 'LPAREN':
             Parser.tokenizer.select_next()
             result = Parser.parse_boolexp()
@@ -872,19 +810,6 @@ class Read(Node):
 
     def evaluate(self, symbol_table=SymbolTable()):
         return (int(input()), 'int')
-
-class FuncDec(Node):
-    def __init__(self, value=None, children=None):
-        super().__init__(value)
-        if children is not None:
-            self.children = children
-        self.args = self.children[1:-1]
-        self.block = self.children[-1]
-
-    def evaluate(self, symbol_table=SymbolTable()):
-        symbol_table.create(self.children[0])
-        symbol_table.set(self.children[0], self, 'function')
-        return self
     
 class CalvinCycleDec(Node):
     def __init__(self, value=None, children=None):
@@ -972,36 +897,6 @@ class SinteseGlicose(Node):
         glicose_now = symbol_table.get('glicose')[0]
         symbol_table.set('G3P', G3P_now - 2, 'int')
         symbol_table.set('glicose', glicose_now + 1, 'int')
-
-class FuncCall(Node):
-    def __init__(self, function_name, args):
-        super().__init__()
-        self.function_name = function_name
-        self.args = args
-
-    def evaluate(self, symbol_table=SymbolTable()):   
-        # Verifica se a função está na FuncTable
-        if self.function_name not in symbol_table.symbols:
-            raise Exception(f'A função "{self.function_name}" não está definida.')
-
-        # Obtém o bloco de código da função da FuncTable
-        function = symbol_table.get(self.function_name)[0]
-
-        # Verifica se o número de argumentos passados coincide com o número de parâmetros da função
-        if len(self.args) != len(function.args):
-            raise Exception(f'Número incorreto de argumentos passados para a função "{self.function_name}".')
-
-        # Cria uma SymbolTable local para a execução da função
-        local_symbol_table = SymbolTable()
-        
-        # print(symbol_table.symbols)
-        # Executa VarDec dos args locais e atribui os args na symboltable local
-        for i in range(len(self.args)):
-            local_symbol_table.create(function.args[i])
-            local_symbol_table.set(function.args[i], self.args[i].evaluate(symbol_table)[0], 'int')
-        
-        # Executa o evaluate do bloco da função com a SymbolTable local
-        return function.block.evaluate(local_symbol_table)
 
 class Return(Node):
     def __init__(self, value=None):
