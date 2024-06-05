@@ -1,0 +1,44 @@
+// Declaração de variáveis padrão
+variable CO2 = 20;
+variable RuBP = 10;
+variable glicose = 10;
+variable ATP = 10;
+variable ADP = 0;
+variable G3P = 10;
+variable RuBP_min = 3;  // Valor mínimo de RuBP
+variable glicose_min = 2;  // Valor mínimo de glicose
+variable PGA = 0;
+variable NADPH = 5;
+variable NADP = 0;
+variable Pi = 0;
+
+// Declaração de variáveis personalizadas
+custom_variable luminosidade = 50;
+custom_variable pH = 6;
+custom_variable count = 0;
+
+calvin_cycle {
+    fixacao_CO2;
+    reducao_3_PGA;
+
+    // Condicional para regeneração_RuBP
+    if (RuBP < RuBP_min and glicose > glicose_min) {
+        regeneracao_RuBP;
+    } else {
+        sintese_glicose;
+    };
+
+    // Condicional para execução de novo ciclo
+    if (RuBP > RuBP_min and glicose > glicose_min) {
+        count = count + 1;
+        pH = pH + 1;
+        luminosidade = luminosidade - 2;
+        calvin_cycle;
+    };
+};
+print("Numero de ciclos: ")
+print(count)
+print("pH final: ")
+print(pH)
+print("luminosidade final: ")
+print(luminosidade)
