@@ -282,46 +282,46 @@ class Parser:
         self.tokenizer = tokenizer
 
     @staticmethod
-    def parse_relexpr():
-        resultado = Parser.parse_expression()
+    def parseComparisonExpression():
+        resultado = Parser.parseExpression()
         while Parser.tokenizer.next.type in ['EQ', 'GT', 'LT']:
             if Parser.tokenizer.next.type == 'EQ':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('==', [resultado, Parser.parse_expression()])
+                resultado = BinOp('==', [resultado, Parser.parseExpression()])
             elif Parser.tokenizer.next.type == 'GT':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('>', [resultado, Parser.parse_expression()])
+                resultado = BinOp('>', [resultado, Parser.parseExpression()])
             elif Parser.tokenizer.next.type == 'LT':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('<', [resultado, Parser.parse_expression()])
+                resultado = BinOp('<', [resultado, Parser.parseExpression()])
             else:
                 raise Exception('Esperado um operador ==, > ou <')
         return resultado
 
     @staticmethod
-    def parse_boolterm():
-        resultado = Parser.parse_relexpr()
+    def parseLogicalTerm():
+        resultado = Parser.parseComparisonExpression()
         while Parser.tokenizer.next.type == 'AND':
             if Parser.tokenizer.next.type == 'AND':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('and', [resultado, Parser.parse_relexpr()])
+                resultado = BinOp('and', [resultado, Parser.parseComparisonExpression()])
             else:
                 raise Exception('Esperado um operador and')
         return resultado
     
     @staticmethod
-    def parse_boolexp():
-        resultado = Parser.parse_boolterm()
+    def parseLogicalExpression():
+        resultado = Parser.parseLogicalTerm()
         while Parser.tokenizer.next.type == 'OR':
             if Parser.tokenizer.next.type == 'OR':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('or', [resultado, Parser.parse_boolterm()])
+                resultado = BinOp('or', [resultado, Parser.parseLogicalTerm()])
             else:
                 raise Exception('Esperado um operador or')
         return resultado
     
     @staticmethod
-    def parse_statement():
+    def parseStatement():
         current_token = Parser.tokenizer.next
         if current_token.type == 'LB':
             Parser.tokenizer.select_next()
@@ -331,9 +331,12 @@ class Parser:
             if Parser.tokenizer.next.type != 'LPAREN':
                 raise Exception('Esperado um "("')
             Parser.tokenizer.select_next()
-            result = Print('print', [Parser.parse_boolexp()])
+            result = Print('print', [Parser.parseLogicalExpression()])
             if Parser.tokenizer.next.type != 'RPAREN':
                 raise Exception('Esperado um ")"')
+            Parser.tokenizer.select_next()
+            if Parser.tokenizer.next.type != 'SEMICOLON':
+                raise Exception('Esperado um ";"')
             Parser.tokenizer.select_next()
             if Parser.tokenizer.next.type != 'LB':
                 raise Exception('Esperado um "\n"')
@@ -344,12 +347,27 @@ class Parser:
             Parser.tokenizer.select_next()
             if Parser.tokenizer.next.type == 'ASSIGN':
                 Parser.tokenizer.select_next()
-                result = BinOp('=', [IntVal(iden), Parser.parse_boolexp()])
+                result = BinOp('=', [IntVal(iden), Parser.parseLogicalExpression()])
                 if Parser.tokenizer.next.type != 'SEMICOLON':
                     raise Exception('Esperado um ";"')
                 Parser.tokenizer.select_next()
                 if Parser.tokenizer.next.type != 'LB':
                     raise Exception(f'Esperado um "\n", mas foi encontrado "{Parser.tokenizer.next.type}"')
+                Parser.tokenizer.select_next()
+                return result
+            #if para operação seguida de atribuição
+            if Parser.tokenizer.next.type in ['PLUS', 'MINUS', 'MULT', 'DIV']:
+                op = Parser.tokenizer.next.type
+                Parser.tokenizer.select_next()
+                if Parser.tokenizer.next.type != 'ASSIGN':
+                    raise Exception('Esperado um "="')
+                Parser.tokenizer.select_next()
+                result = BinOp(op, [IntVal(iden), Parser.parseExpression(), iden])
+                if Parser.tokenizer.next.type != 'SEMICOLON':
+                    raise Exception('Esperado um ";"')
+                Parser.tokenizer.select_next()
+                if Parser.tokenizer.next.type != 'LB':
+                    raise Exception('Esperado um "\n"')
                 Parser.tokenizer.select_next()
                 return result
             else:
@@ -372,7 +390,7 @@ class Parser:
                 elif current_token.type == 'ASSIGN':
                     # Declaração com atribuição
                     Parser.tokenizer.select_next()
-                    expression = Parser.parse_boolexp()
+                    expression = Parser.parseLogicalExpression()
                     result = VarDec('variable', [IntVal(iden), expression])
                     if Parser.tokenizer.next.type != 'SEMICOLON':
                         raise Exception('Esperado um ";"')
@@ -401,7 +419,7 @@ class Parser:
                 elif current_token.type == 'ASSIGN':
                     # Declaração com atribuição
                     Parser.tokenizer.select_next()
-                    expression = Parser.parse_boolexp()
+                    expression = Parser.parseLogicalExpression()
                     result = VarDec('variable', [IntVal(iden), expression])
                     if Parser.tokenizer.next.type != 'SEMICOLON':
                         raise Exception('Esperado um ";"')
@@ -413,9 +431,9 @@ class Parser:
                 else:
                     raise Exception('Esperado uma atribuição ou uma quebra de linha')
         elif current_token.type == 'WHILE':
-            #ler while, chamar parse_boolexp, ler do, loopar em pass ou statement, ler end, retornar While
+            #ler while, chamar parseLogicalExpression, ler do, loopar em pass ou statement, ler end, retornar While
             Parser.tokenizer.select_next()
-            condition = Parser.parse_boolexp()
+            condition = Parser.parseLogicalExpression()
             if Parser.tokenizer.next.type != 'DO':
                 raise Exception('Esperado um "do"')
             Parser.tokenizer.select_next()
@@ -424,7 +442,7 @@ class Parser:
             Parser.tokenizer.select_next()
             resultado = Block('block')
             while Parser.tokenizer.next.type != 'END':
-                resultado.children.append(Parser.parse_statement())
+                resultado.children.append(Parser.parseStatement())
             if Parser.tokenizer.next.type != 'END':
                 raise Exception('Esperado um "end"')
             Parser.tokenizer.select_next()
@@ -438,7 +456,7 @@ class Parser:
             if Parser.tokenizer.next.type != 'LPAREN':
                 raise Exception('Esperado um LPAREN após "if"')
             Parser.tokenizer.select_next()
-            condition = Parser.parse_boolexp()
+            condition = Parser.parseLogicalExpression()
             if Parser.tokenizer.next.type != 'RPAREN':
                 raise Exception('Esperado um RPAREN após a condição do "if"')
             Parser.tokenizer.select_next()
@@ -450,7 +468,7 @@ class Parser:
             Parser.tokenizer.select_next()
             if_block = Block('block')
             while Parser.tokenizer.next.type != 'RCURLY':
-                if_block.children.append(Parser.parse_statement())
+                if_block.children.append(Parser.parseStatement())
             if Parser.tokenizer.next.type != 'RCURLY':
                 raise Exception(f'Esperado um "RCURLY" após bloco do "if": {Parser.tokenizer.next.type}')
             Parser.tokenizer.select_next()
@@ -466,7 +484,7 @@ class Parser:
                 Parser.tokenizer.select_next()
                 else_block = Block('block')
                 while Parser.tokenizer.next.type != 'RCURLY':
-                    else_block.children.append(Parser.parse_statement())
+                    else_block.children.append(Parser.parseStatement())
                 if Parser.tokenizer.next.type != 'RCURLY':
                     raise Exception(f'Esperado um "RCURLY" após bloco do "else": {Parser.tokenizer.next.type}')
                 Parser.tokenizer.select_next()
@@ -477,7 +495,7 @@ class Parser:
             return If('if', if_childs)
         elif current_token.type == 'RETURN':
             Parser.tokenizer.select_next()
-            result = Parser.parse_boolexp()
+            result = Parser.parseLogicalExpression()
             if Parser.tokenizer.next.type != 'LB':
                 raise Exception('Esperado um "\n"')
             Parser.tokenizer.select_next()
@@ -491,7 +509,7 @@ class Parser:
                 Parser.tokenizer.select_next()
                 cycle_block = Block('block')
                 while Parser.tokenizer.next.type != 'RCURLY':
-                    cycle_block.children.append(Parser.parse_statement())
+                    cycle_block.children.append(Parser.parseStatement())
                 if Parser.tokenizer.next.type != 'RCURLY':
                     raise Exception('Esperado um "}"') 
                 Parser.tokenizer.select_next()
@@ -533,7 +551,7 @@ class Parser:
             raise Exception(f'Declaração inválida: {current_token.type}')
         
     @staticmethod
-    def parse_factor():
+    def parseFactor():
         current_token = Parser.tokenizer.next
 
         if current_token.type == 'INT':
@@ -549,7 +567,7 @@ class Parser:
             return IntVal(iden)
         elif current_token.type == 'LPAREN':
             Parser.tokenizer.select_next()
-            result = Parser.parse_boolexp()
+            result = Parser.parseLogicalExpression()
             if Parser.tokenizer.next.type != 'RPAREN':
                 raise Exception('Esperado um ")"')
             Parser.tokenizer.select_next()
@@ -557,7 +575,7 @@ class Parser:
         elif current_token.type in ['PLUS', 'MINUS', 'NOT']:
             op = current_token.type
             Parser.tokenizer.select_next()
-            operand = Parser.parse_factor()
+            operand = Parser.parseFactor()
             if op == 'PLUS':
                 return UnOp('+', operand)
             elif op == 'MINUS':
@@ -578,49 +596,49 @@ class Parser:
 
         
     @staticmethod
-    def parse_term():
-        resultado = Parser.parse_factor()
+    def parseTerm():
+        resultado = Parser.parseFactor()
         while Parser.tokenizer.next.type in ['MULT', 'DIV']:
             if Parser.tokenizer.next.type == 'MULT':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('*', [resultado, Parser.parse_factor()])
+                resultado = BinOp('*', [resultado, Parser.parseFactor()])
             elif Parser.tokenizer.next.type == 'DIV':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('/', [resultado, Parser.parse_factor()])
+                resultado = BinOp('/', [resultado, Parser.parseFactor()])
             else:
                 raise Exception('Esperado um operador + ou -')
         return resultado
     
     @staticmethod
-    def parse_expression():
-        resultado = Parser.parse_term()
+    def parseExpression():
+        resultado = Parser.parseTerm()
         while Parser.tokenizer.next.type in ['PLUS', 'MINUS', 'CONCAT']:
             if Parser.tokenizer.next.type == 'PLUS':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('+', [resultado, Parser.parse_term()])
+                resultado = BinOp('+', [resultado, Parser.parseTerm()])
             elif Parser.tokenizer.next.type == 'MINUS':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('-', [resultado, Parser.parse_term()])
+                resultado = BinOp('-', [resultado, Parser.parseTerm()])
             elif Parser.tokenizer.next.type == 'CONCAT':
                 Parser.tokenizer.select_next()
-                resultado = BinOp('..', [resultado, Parser.parse_term()])
+                resultado = BinOp('..', [resultado, Parser.parseTerm()])
             else:
                 raise Exception('Esperado um operador +, - ou ..')
         return resultado
     
     @staticmethod
-    def parse_block():
+    def parseBlock():
         Parser.tokenizer.select_next()
         resultado = Block('block')
         while Parser.tokenizer.next.type != 'EOF':
-            resultado.children.append(Parser.parse_statement())
+            resultado.children.append(Parser.parseStatement())
         return resultado
     
     @staticmethod
-    def run(source):
+    def execute(source):
         source = PrePro.filter(source)
         Parser.tokenizer = Tokenizer(source)
-        resultado = Parser.parse_block()
+        resultado = Parser.parseBlock()
         if Parser.tokenizer.next.type != 'EOF':
             print(Parser.tokenizer.next.type, Parser.tokenizer.next.value)
             raise Exception('Esperado EOF')
@@ -659,6 +677,15 @@ class BinOp(Node):
         except:
             raise Exception(f"right: {self.children[1]}")
 
+        if len (self.children) == 3:
+            if self.value == 'PLUS':
+                symbol_table.set(self.children[2], left_value + right_value, 'int')
+            elif self.value == 'MINUS':
+                symbol_table.set(self.children[2], left_value - right_value, 'int')
+            elif self.value == 'MULT':
+                symbol_table.set(self.children[2], left_value * right_value, 'int')
+            elif self.value == 'DIV':
+                symbol_table.set(self.children[2], left_value // right_value, 'int')
         if self.value == '+':
             return left_value + right_value, 'int'
         elif self.value == '-':
@@ -908,7 +935,7 @@ class Return(Node):
 def main(file_path):
     with open(file_path, 'r') as file:
         expressao = file.read()
-    resultado = Parser.run(expressao)
+    resultado = Parser.execute(expressao)
     symbol_table = SymbolTable()
     resultado.evaluate(symbol_table)
 
